@@ -72,6 +72,7 @@ services:
     depends_on:
       - elasticsearch
     volumes:
+      - ./logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml
       - ./logstash/pipeline/:/usr/share/logstash/pipeline/
     networks:
       - esnet
