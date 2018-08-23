@@ -76,7 +76,9 @@ services:
       - ./logstash/pipeline/:/usr/share/logstash/pipeline/
     networks:
       - esnet
-
+  logspout:
+    image: gliderlabs/logspout:v3.2.4
+    container_name: logspout
 volumes:
   esdata:
     driver: local
