@@ -6,6 +6,7 @@ services:
     image: docker.elastic.co/elasticsearch/elasticsearch:$ELASTIC_VERSION
     container_name: elasticsearch
     environment:
+      - LOGSPOUT=ignore
       - cluster.name=docker-cluster
       - bootstrap.memory_lock=true
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
@@ -21,10 +22,12 @@ services:
       - esnet
     healthcheck:
       test: ['CMD', 'curl', '-f', '-u', 'elastic:changeme', 'http://localhost:9200']
+
   elasticsearch-node1:
     image: docker.elastic.co/elasticsearch/elasticsearch:$ELASTIC_VERSION
     container_name: elasticsearch-node1
     environment:
+      - LOGSPOUT=ignore
       - cluster.name=docker-cluster
       - bootstrap.memory_lock=true
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
@@ -37,10 +40,12 @@ services:
       - esdata1:/usr/share/elasticsearch/data
     networks:
       - esnet
+
   elasticsearch-node2:
     image: docker.elastic.co/elasticsearch/elasticsearch:$ELASTIC_VERSION
     container_name: elasticsearch-node2
     environment:
+      - LOGSPOUT=ignore
       - cluster.name=docker-cluster
       - bootstrap.memory_lock=true
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
@@ -53,10 +58,13 @@ services:
       - esdata2:/usr/share/elasticsearch/data
     networks:
       - esnet
+
   kibana:
     # 官方推荐镜像，详见https://hub.docker.com/r/library/kibana/
     image: docker.elastic.co/kibana/kibana:$ELASTIC_VERSION
     container_name: kibana
+    environment:
+      - LOGSPOUT=ignore
     depends_on:
       - elasticsearch
     volumes:
@@ -65,10 +73,17 @@ services:
       - 5601:5601
     networks:
       - esnet
+
   logstash:
     # 官方推荐镜像，详见https://hub.docker.com/r/library/logstash/
     image: docker.elastic.co/logstash/logstash:$ELASTIC_VERSION
     container_name: logstash
+    environment:
+      - LOGSPOUT=ignore
+      # - STDOUT=true
+    ports:
+      - 5000:5000
+      - 5000:5000/udp
     depends_on:
       - elasticsearch
     volumes:
@@ -76,9 +91,22 @@ services:
       - ./logstash/pipeline/:/usr/share/logstash/pipeline/
     networks:
       - esnet
+
   logspout:
-    image: gliderlabs/logspout:v3.2.4
+    image: gliderlabs/logspout:$LOGSPOUT_VERSION
     container_name: logspout
+    environment:
+      - LOGSPOUT=ignore
+      - DEBUG=true
+    depends_on:
+      - logstash
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - esnet
+    command: syslog://logstash:5000
+    # command: syslog+tcp://logstash:5000
+
 volumes:
   esdata:
     driver: local
